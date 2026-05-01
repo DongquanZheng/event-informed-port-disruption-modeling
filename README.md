@@ -49,17 +49,7 @@ The project uses a weekly temporal prediction design. The task is to predict whe
 
 ### 1. Target construction
 
-Daily PortWatch records are aggregated to weekly port activity. The main activity variable is weekly `portcalls`, which counts vessel calls at the port. The binary target is defined as:
-
-$$
-y_{t+1} =
-\begin{cases}
-1, & \text{if next-week port activity falls below the rolling historical abnormality threshold} \\
-0, & \text{otherwise}
-\end{cases}
-$$
-
-where \(y_{t+1}\) denotes whether port activity in the following week is classified as abnormal.
+Daily PortWatch records are aggregated to weekly port activity. The main activity variable is weekly `portcalls`, which counts vessel calls at the port. The binary target is denoted as \(y_{t+1}\), where \(y_{t+1}=1\) if next-week port activity falls below the rolling historical abnormality threshold, and \(y_{t+1}=0\) otherwise.
 
 In this MVP, abnormality is treated as a statistical proxy for disruption rather than an official disruption label. This makes the project suitable for testing whether external event signals contain predictive information, while keeping the limitation explicit.
 
@@ -81,11 +71,7 @@ GDELT event records are filtered to maritime and logistics-related news using UR
 
 A weakly supervised TF-IDF Logistic Regression model is trained on January 2024 maritime news slugs. The weak labels are created from transparent rules using event severity, tone, and disruption-related terms. The trained classifier then estimates an article-level disruption probability:
 
-$$
-p_i^{NLP} = P(\text{disruption-related maritime news} \mid \text{URL slug text}_i)
-$$
-
-where \(p_i^{NLP}\) is the predicted disruption probability for article \(i\).
+\(p_i^{NLP} = P(\text{disruption-related maritime news} \mid \text{URL slug text}_i)\), where \(p_i^{NLP}\) is the predicted disruption probability for article \(i\).
 
 This step does not claim to build a perfect NLP model. Its purpose is to convert unstructured news traces into consistent event-risk features that can be tested against the operational baseline.
 
@@ -123,25 +109,15 @@ This design reflects the research hypothesis that news signals become more usefu
 
 The final model is a two-stage correction framework:
 
-$$
-\hat{p}_{t+1}^{base} = f(X_t^{operational})
-$$
+\(\hat{p}_{t+1}^{base} = f(X_t^{operational})\)
 
-$$
-\hat{p}_{t+1}^{corrected} = g(\hat{p}_{t+1}^{base}, X_t^{event})
-$$
+\(\hat{p}_{t+1}^{corrected} = g(\hat{p}_{t+1}^{base}, X_t^{event})\)
 
-where \(X_t^{operational}\) represents historical port-activity features and \(X_t^{event}\) represents multiscale NLP-derived event features.
+Here, \(X_t^{operational}\) represents historical port-activity features and \(X_t^{event}\) represents multiscale NLP-derived event features.
 
 The second-stage model does not replace the operational baseline. Instead, it tests whether external event signals can adjust the baseline risk estimate upward or downward.
 
-The final comparison is therefore:
-
-$$
-\text{Operational baseline}
-\quad \text{vs.} \quad
-\text{Operational baseline + multiscale NLP event correction}
-$$
+The final comparison is therefore the operational baseline versus the operational baseline with multiscale NLP event correction.
 
 This structure directly evaluates the incremental value of NLP-derived event signals.
 

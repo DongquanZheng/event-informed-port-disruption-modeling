@@ -98,15 +98,9 @@ diversion | reroute | protest | explosion | fire | sanction
 
 Final weak target:
 
-$$
-z_i =
-\begin{cases}
-1, & \text{if severe\_event}_i = 1 \text{ and disruption\_text}_i = 1 \\
-0, & \text{otherwise}
-\end{cases}
-$$
+\(z_i=1\) if \(s_i=1\) and \(d_i=1\); otherwise, \(z_i=0\).
 
-where \(z_i\) is the weak disruption label for article \(i\).
+Here, \(z_i\) is the weak disruption label for article \(i\), \(s_i\) indicates whether the article satisfies the severe-event condition, and \(d_i\) indicates whether the article contains disruption-related terms.
 
 This weak-labeling design intentionally combines structured GDELT event attributes with transparent text rules. It is not a ground-truth article annotation, but it provides a reproducible training signal for the NLP component.
 
@@ -138,19 +132,11 @@ The model is trained on weakly labeled January 2024 maritime news. It is then ap
 
 Output variable:
 
-$$
-p_i^{NLP} = P(z_i = 1 \mid \text{URL slug text}_i)
-$$
+\(p_i^{NLP} = P(z_i = 1 \mid \text{URL slug text}_i)\)
 
 High-risk article flag:
 
-$$
-h_i =
-\begin{cases}
-1, & \text{if } p_i^{NLP} \geq 0.5 \\
-0, & \text{otherwise}
-\end{cases}
-$$
+\(h_i=1\) if \(p_i^{NLP} \geq 0.5\); otherwise, \(h_i=0\).
 
 ## 6. Weekly Event Aggregation
 
@@ -224,9 +210,7 @@ This layer is intentionally strict. It is expected to be sparse, but it helps te
 
 The first-stage model uses operational PortWatch features and outputs:
 
-$$
-\hat{p}_{t+1}^{base}
-$$
+\(\hat{p}_{t+1}^{base}\)
 
 The second-stage model uses:
 
