@@ -49,7 +49,13 @@ The project uses a weekly temporal prediction design. The task is to predict whe
 
 ### 1. Target construction
 
-Daily PortWatch records are aggregated to weekly port activity. The main activity variable is weekly `portcalls`, which counts vessel calls at the port. The binary target is denoted as \(y_{t+1}\), where \(y_{t+1}=1\) if next-week port activity falls below the rolling historical abnormality threshold, and \(y_{t+1}=0\) otherwise.
+Daily PortWatch records are aggregated to weekly port activity. The main activity variable is weekly `portcalls`, which counts vessel calls at the port. The binary prediction target is defined as:
+
+$$
+y_{t+1} = \mathbf{1}\left(a_{t+1} < \tau_t\right)
+$$
+
+where \(a_{t+1}\) is next-week port activity, \(\tau_t\) is the rolling historical abnormality threshold estimated from past activity, and \(y_{t+1}=1\) indicates abnormal next-week port activity.
 
 In this MVP, abnormality is treated as a statistical proxy for disruption rather than an official disruption label. This makes the project suitable for testing whether external event signals contain predictive information, while keeping the limitation explicit.
 
@@ -69,9 +75,13 @@ A Logistic Regression classifier is used as the main baseline because it is tran
 
 GDELT event records are filtered to maritime and logistics-related news using URL-based keyword screening. Because full article text is not redistributed, the project uses the textual slug from `SOURCEURL` as a lightweight text representation.
 
-A weakly supervised TF-IDF Logistic Regression model is trained on January 2024 maritime news slugs. The weak labels are created from transparent rules using event severity, tone, and disruption-related terms. The trained classifier then estimates an article-level disruption probability:
+A weakly supervised TF-IDF Logistic Regression model is trained on January 2024 maritime news slugs. The weak labels are created from transparent rules using event severity, tone, and disruption-related terms. The trained classifier then estimates article-level disruption risk:
 
-\(p_i^{NLP} = P(\text{disruption-related maritime news} \mid \text{URL slug text}_i)\), where \(p_i^{NLP}\) is the predicted disruption probability for article \(i\).
+$$
+p_i^{\mathrm{NLP}} = P(z_i = 1 \mid u_i)
+$$
+
+where \(u_i\) is the URL slug text of article \(i\), \(z_i\) is the weak disruption label, and \(p_i^{\mathrm{NLP}}\) is the predicted disruption-related news probability.
 
 This step does not claim to build a perfect NLP model. Its purpose is to convert unstructured news traces into consistent event-risk features that can be tested against the operational baseline.
 
@@ -109,11 +119,15 @@ This design reflects the research hypothesis that news signals become more usefu
 
 The final model is a two-stage correction framework:
 
-\(\hat{p}_{t+1}^{base} = f(X_t^{operational})\)
+$$
+\hat{p}_{t+1}^{\mathrm{base}} = f\left(X_t^{\mathrm{op}}\right)
+$$
 
-\(\hat{p}_{t+1}^{corrected} = g(\hat{p}_{t+1}^{base}, X_t^{event})\)
+$$
+\hat{p}_{t+1}^{\mathrm{corr}} = g\left(\hat{p}_{t+1}^{\mathrm{base}}, X_t^{\mathrm{event}}\right)
+$$
 
-Here, \(X_t^{operational}\) represents historical port-activity features and \(X_t^{event}\) represents multiscale NLP-derived event features.
+where \(X_t^{\mathrm{op}}\) represents historical operational features, \(X_t^{\mathrm{event}}\) represents multiscale NLP-derived event features, \(\hat{p}_{t+1}^{\mathrm{base}}\) is the baseline risk estimate, and \(\hat{p}_{t+1}^{\mathrm{corr}}\) is the event-corrected risk estimate.
 
 The second-stage model does not replace the operational baseline. Instead, it tests whether external event signals can adjust the baseline risk estimate upward or downward.
 

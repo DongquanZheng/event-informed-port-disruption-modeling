@@ -98,9 +98,13 @@ diversion | reroute | protest | explosion | fire | sanction
 
 Final weak target:
 
-\(z_i=1\) if \(s_i=1\) and \(d_i=1\); otherwise, \(z_i=0\).
+The weak disruption label is defined as:
 
-Here, \(z_i\) is the weak disruption label for article \(i\), \(s_i\) indicates whether the article satisfies the severe-event condition, and \(d_i\) indicates whether the article contains disruption-related terms.
+$$
+z_i = \mathbf{1}\left(s_i = 1 \land d_i = 1\right)
+$$
+
+where \(z_i\) is the weak label for article \(i\), \(s_i\) indicates whether the article satisfies the severe-or-adverse event condition, and \(d_i\) indicates whether the URL slug contains disruption-related terms.
 
 This weak-labeling design intentionally combines structured GDELT event attributes with transparent text rules. It is not a ground-truth article annotation, but it provides a reproducible training signal for the NLP component.
 
@@ -132,11 +136,19 @@ The model is trained on weakly labeled January 2024 maritime news. It is then ap
 
 Output variable:
 
-\(p_i^{NLP} = P(z_i = 1 \mid \text{URL slug text}_i)\)
+$$
+p_i^{\mathrm{NLP}} = P(z_i = 1 \mid u_i)
+$$
+
+where \(u_i\) is the URL slug text and \(p_i^{\mathrm{NLP}}\) is the classifier's estimated probability that article \(i\) belongs to the disruption-related maritime news class.
 
 High-risk article flag:
 
-\(h_i=1\) if \(p_i^{NLP} \geq 0.5\); otherwise, \(h_i=0\).
+$$
+h_i = \mathbf{1}\left(p_i^{\mathrm{NLP}} \geq 0.5\right)
+$$
+
+where \(h_i=1\) indicates that article \(i\) is classified as a high-risk event signal.
 
 ## 6. Weekly Event Aggregation
 
@@ -210,7 +222,9 @@ This layer is intentionally strict. It is expected to be sparse, but it helps te
 
 The first-stage model uses operational PortWatch features and outputs:
 
-\(\hat{p}_{t+1}^{base}\)
+$$
+\hat{p}_{t+1}^{\mathrm{base}} = f\left(X_t^{\mathrm{op}}\right)
+$$
 
 The second-stage model uses:
 
