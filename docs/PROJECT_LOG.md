@@ -169,3 +169,7 @@ A concise model comparison figure was generated comparing the operational baseli
 ### GitHub Cleanup
 
 The repository was cleaned for GitHub presentation. Early MVP scaffolding files were removed, including `src/`, `scripts/`, the old 00-03 development notebooks, notebook checkpoints, scratch notebook files, sample CSVs, and early output figures that no longer match the final multiscale weekly modeling design. The remaining public-facing structure keeps the README, requirements file, final summary notebook, final result documentation, lightweight processed summary tables, and final figures. Raw, interim, and most processed data remain locally available but are excluded from GitHub by `.gitignore`.
+
+### Full Reproduction Layer Added
+
+After reviewing the GitHub release structure, a full reproduction layer was added back to the repository. The project now includes `scripts/reproduce_pipeline.py`, which documents and implements the end-to-end pipeline from public PortWatch and GDELT data sources to weekly event features and two-stage modeling. A dedicated reproduction guide was added at `docs/DATA_REPRODUCTION.md`, and a detailed NLP construction guide was added at `docs/NLP_SIGNAL_CONSTRUCTION.md`. This resolves the gap between a clean result-summary repository and a fully inspectable research workflow.

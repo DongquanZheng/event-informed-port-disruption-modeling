@@ -39,7 +39,9 @@ This project uses two public data sources:
 - **IMF PortWatch**: weekly port activity indicators for Rotterdam, derived from daily PortWatch records.
 - **GDELT Event Database**: global news event records. `SOURCEURL` slugs are used as lightweight textual representations of maritime news articles.
 
-Large raw and intermediate data files are not intended to be committed to GitHub. The repository keeps code, notebooks, documentation, final figures, and small summary CSV files needed to reproduce the final result tables.
+Large raw and intermediate data files are not intended to be committed to GitHub. The repository keeps code, notebooks, documentation, final figures, and small summary CSV files needed to reproduce the final result tables. A full reproduction script is provided for users who want to rebuild the dataset from public sources.
+
+Detailed NLP filtering, weak-labeling, spatial-layer construction, and feature aggregation rules are documented in `docs/NLP_SIGNAL_CONSTRUCTION.md`. The executable implementation is provided in `scripts/reproduce_pipeline.py`.
 
 ## Methodology
 
@@ -49,10 +51,15 @@ The project uses a weekly temporal prediction design. The task is to predict whe
 
 Daily PortWatch records are aggregated to weekly port activity. The main activity variable is weekly `portcalls`, which counts vessel calls at the port. The binary target is defined as:
 
-```text
-abnormal_activity_next_week = 1
-if next_week_activity is below a rolling historical abnormality threshold
-```
+$$
+y_{t+1} =
+\begin{cases}
+1, & \text{if next-week port activity falls below the rolling historical abnormality threshold} \\
+0, & \text{otherwise}
+\end{cases}
+$$
+
+where \(y_{t+1}\) denotes whether port activity in the following week is classified as abnormal.
 
 In this MVP, abnormality is treated as a statistical proxy for disruption rather than an official disruption label. This makes the project suitable for testing whether external event signals contain predictive information, while keeping the limitation explicit.
 
@@ -74,11 +81,21 @@ GDELT event records are filtered to maritime and logistics-related news using UR
 
 A weakly supervised TF-IDF Logistic Regression model is trained on January 2024 maritime news slugs. The weak labels are created from transparent rules using event severity, tone, and disruption-related terms. The trained classifier then estimates an article-level disruption probability:
 
-```text
-nlp_disruption_probability = P(disruption-related maritime news | URL slug text)
-```
+$$
+p_i^{NLP} = P(\text{disruption-related maritime news} \mid \text{URL slug text}_i)
+$$
+
+where \(p_i^{NLP}\) is the predicted disruption probability for article \(i\).
 
 This step does not claim to build a perfect NLP model. Its purpose is to convert unstructured news traces into consistent event-risk features that can be tested against the operational baseline.
+
+The filtering and labeling logic is intentionally transparent and reproducible. In brief, the pipeline:
+
+- filters GDELT records using maritime keywords such as `port`, `shipping`, `cargo`, `container`, `vessel`, `tanker`, `terminal`, `freight`, `suez`, `panama`, `red sea`, `houthi`, and `maersk`;
+- extracts text from the URL path in `SOURCEURL`;
+- creates weak labels using event severity, negative tone, and disruption-related keywords;
+- trains a TF-IDF Logistic Regression classifier on the weakly labeled January 2024 maritime article set;
+- applies the classifier to 2021-2025 maritime news records to obtain article-level disruption probabilities.
 
 ### 4. Weekly event feature aggregation
 
@@ -106,20 +123,25 @@ This design reflects the research hypothesis that news signals become more usefu
 
 The final model is a two-stage correction framework:
 
-```text
-Stage 1: historical operational features -> baseline risk probability
-Stage 2: baseline probability + multiscale NLP event features -> corrected risk probability
-```
+$$
+\hat{p}_{t+1}^{base} = f(X_t^{operational})
+$$
+
+$$
+\hat{p}_{t+1}^{corrected} = g(\hat{p}_{t+1}^{base}, X_t^{event})
+$$
+
+where \(X_t^{operational}\) represents historical port-activity features and \(X_t^{event}\) represents multiscale NLP-derived event features.
 
 The second-stage model does not replace the operational baseline. Instead, it tests whether external event signals can adjust the baseline risk estimate upward or downward.
 
 The final comparison is therefore:
 
-```text
-Operational baseline
-vs.
-Operational baseline + multiscale NLP event correction
-```
+$$
+\text{Operational baseline}
+\quad \text{vs.} \quad
+\text{Operational baseline + multiscale NLP event correction}
+$$
 
 This structure directly evaluates the incremental value of NLP-derived event signals.
 
@@ -170,6 +192,7 @@ event_augmented_port_disruption/
 |-- notebooks/
 |-- outputs/
 |   `-- figures/
+|-- scripts/
 |-- README.md
 |-- requirements.txt
 `-- .gitignore
@@ -199,7 +222,19 @@ The final summary notebook reproduces the main result tables and figures from th
 
 Full end-to-end reproduction requires downloading PortWatch and GDELT data from their original public sources, then rerunning the data acquisition, NLP feature construction, weekly aggregation, and modeling steps. Raw and intermediate files are intentionally excluded from GitHub because they are large and should be obtained directly from the original sources.
 
-The notebook remains meaningful even without raw data because it documents the final modeling logic, reproduces the reported comparison tables, and serves as the clean entry point for readers. The raw-data pipeline can be regenerated locally when needed, but it should not be the first thing a reviewer has to run.
+The full reproduction script is:
+
+```bash
+python scripts/reproduce_pipeline.py
+```
+
+For a shorter test run:
+
+```bash
+python scripts/reproduce_pipeline.py --years 2024 2025
+```
+
+See `docs/DATA_REPRODUCTION.md` for the full data reproduction workflow.
 
 ## Current Status
 
